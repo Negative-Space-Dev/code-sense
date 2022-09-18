@@ -13,10 +13,28 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('code-sense.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Code Sense!');
+	let disposable = vscode.commands.registerCommand('code-sense.find-file-references', async () => {
+		
+		console.log('Open Flow');
+
+		// Find where the current file is being imported
+
+		// Get current filename
+		const activeTextEditor = vscode.window.activeTextEditor;
+		// console.log(activeTextEditor);
+		if (activeTextEditor) {
+			const document = activeTextEditor.document;
+			const fileNameArrayReversed = document.fileName.split('/').reverse();
+			const [fileName, folderName, ...rest] = fileNameArrayReversed;
+			const [fileNameRoot, fileNameExtension] = fileName.split('.');
+			// console.log({fileName, folderName, fileNameRoot, fileNameExtension});
+			
+			// Perform search across workspace
+			const fileNameRegex = `('|"|/)${fileNameRoot}(|.${fileNameExtension})('|")`;
+			vscode.commands.executeCommand('workbench.action.findInFiles', 
+				{ query: fileNameRegex, isRegex: true });
+		}
+
 	});
 
 	context.subscriptions.push(disposable);

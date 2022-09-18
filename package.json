@@ -10,16 +10,25 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:code-sense.helloWorld"
+    "onCommand:code-sense.find-file-references"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "code-sense.helloWorld",
-				"title": "Hello World"
+				"command": "code-sense.find-file-references",
+				"title": "Find file references"
 			}
-		]
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "code-sense.find-file-references",
+					"when": "editorTextFocus",
+					"group": "navigation"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
