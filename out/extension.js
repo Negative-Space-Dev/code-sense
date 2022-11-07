@@ -29,10 +29,66 @@ function activate(context) {
             const fileNameRegex = `('|"|/)${fileNameRoot}(|.${fileNameExtension})('|")`;
             vscode.commands.executeCommand('workbench.action.findInFiles', { query: fileNameRegex, isRegex: true });
         }
+        vscode.workspace.findTextInFiles({ pattern: 'rc-login--sanctuary-rewards-button' }, (result) => { console.log('result', result); }, undefined).then((result) => { console.log('final result', result); });
+    });
+    let disposable2 = vscode.commands.registerCommand('catCoding.start', async () => {
+        const fullWebServerUri = await vscode.env.asExternalUri(vscode.Uri.parse(`http://localhost:5173`));
+        console.log(fullWebServerUri);
+        // Create and show a new webview
+        const panel = vscode.window.createWebviewPanel('catCoding', // Identifies the type of the webview. Used internally
+        'Cat Coding', // Title of the panel displayed to the user
+        vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+        {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.file(context.extensionPath),
+            ]
+        } // Webview options. More on these later.
+        );
+        const scriptUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'src', 'main.tsx'));
+        const svgUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'public', 'vite.svg'));
+        console.log(scriptUri);
+        console.log(svgUri);
+        const stylesUri = panel.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'dist/assets', 'index.3fce1f81.css'));
+        const cspSource = panel.webview.cspSource;
+        // fetch('http://localhost:5173').then((response: any) => {
+        // 	console.log('response', response);
+        // 	return response.text();
+        // }).then((body: any) => { 
+        // 	console.log('body', body); 
+        // 	// And set its HTML content
+        // 	panel.webview.html = getWebviewContent(body);
+        // });
+        panel.webview.html = `<!DOCTYPE html>
+				<head>
+						<meta
+								http-equiv="Content-Security-Policy"
+								content="default-src 'none'; frame-src ${fullWebServerUri} ${cspSource} https:; img-src ${cspSource} https:; script-src ${cspSource}; style-src ${cspSource} 'unsafe-inline';"
+						/>
+						
+				</head>
+				<body>
+				<style>
+					html, body, iframe {
+						display: block;
+						width: 100%;
+						height: 100%;
+					}
+
+					body { padding: 0; }
+				</style>
+				<!-- All content from the web server must be in an iframe -->
+				<iframe src="${fullWebServerUri}" frameborder="0" allowfullscreen></iframe>
+		</body>
+		</html>`;
     });
     context.subscriptions.push(disposable);
+    context.subscriptions.push(disposable2);
 }
 exports.activate = activate;
+function getWebviewContent(body) {
+    return body;
+}
 // this method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;
