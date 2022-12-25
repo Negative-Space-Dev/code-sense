@@ -27,8 +27,6 @@ provideVSCodeDesignSystem().register(
 );
 
 const [state, setState] = createStore({
-  searchResults: [] as CustomTextSearchMatch[],
-  searchResultsLoading: false,
   intoResults: [] as CustomTextSearchMatch[],
   intoResultsLoading: false,
   outofResults: [] as CustomTextSearchMatch[],
@@ -37,7 +35,6 @@ const [state, setState] = createStore({
   activeEditor: null as vscode.TextEditor | null,
 });
 
-const clearSearchResults = () => setState({ searchResults: [], searchResultsLoading: false });
 const clearIntoResults = () => setState({ intoResults: [], intoResultsLoading: false });
 const clearOutofResults = () => setState({ outofResults: [], outofResultsLoading: false });
 
@@ -154,14 +151,6 @@ createEffect(() => {
 });
 
 const App: Component = () => {
-  let input: HTMLInputElement | undefined;
-  const find = (e: KeyboardEvent | MouseEvent) => {
-    if (e instanceof KeyboardEvent && e.key !== 'Enter') return;
-    clearSearchResults();
-    setState({ searchResultsLoading: true });
-    window.vscode.postMessage({ command: 'find', text: input && input.value });
-  };
-  
   return (
     <div class={styles.App}>
       <vscode-panels>
@@ -169,7 +158,6 @@ const App: Component = () => {
         <vscode-panel-tab id="tab-2">
           OUT OF {`(${countResults(state.outofResults)})`}
         </vscode-panel-tab>
-        <vscode-panel-tab id="tab-3">SEARCH</vscode-panel-tab>
 
         <vscode-panel-view id="view-1">
           <div style={{display: 'flex', 'flex-direction': 'column', gap: '10px'}}>
@@ -196,16 +184,6 @@ const App: Component = () => {
             </Show>
 
             <List results={state.outofResults} resultsLoading={state.outofResultsLoading} workspace={state.workspace}/>
-          </div>
-        </vscode-panel-view>
-
-        <vscode-panel-view id="view-3">
-          <div>
-            <div class={styles.topBar}>
-              <vscode-text-field type="text" ref={input} onKeyPress={find}>Search</vscode-text-field>
-              <vscode-button onClick={find}>Find</vscode-button>
-            </div>
-            <List results={state.searchResults} resultsLoading={state.searchResultsLoading} workspace={state.workspace}/>
           </div>
         </vscode-panel-view>
 
