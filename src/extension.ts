@@ -3,8 +3,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as express from 'express';
-import * as cors from 'cors';
+import express from 'express';
+import cors from 'cors';
 import * as stringSimilarity from 'string-similarity';
 import { CustomTextSearchMatch } from './types';
 
