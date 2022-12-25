@@ -6,9 +6,9 @@
 
 ### 1. Make sure you are using the insider version of VSCode 
 
-It is pretty much the same as normal VSCode but gets updates sooner and has access to Proposed APIs
+  It is pretty much the same as normal VSCode but gets updates sooner and has access to Proposed APIs
+  Download here https://code.visualstudio.com/insiders/
 
-Download here https://code.visualstudio.com/insiders/
 
 ### 2. Download latest `code-sense-X.X.X.vsix` file and install using the "Installe from VSIX..." option in the extensions menu
 
