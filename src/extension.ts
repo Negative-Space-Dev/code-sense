@@ -49,6 +49,8 @@ export function activate(context: vscode.ExtensionContext) {
 			} // Webview options. More on these later.
 		);
 
+		currentPanel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'images/Code-Sense-Logo.png'));
+
 		const entryPath = path.join(context.extensionPath, 'solid-app/dist/index.html');
 
 		const loadEntry = () => {
