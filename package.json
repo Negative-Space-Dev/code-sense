@@ -5,7 +5,7 @@
   "repository": "https://github.com/JasonHassold/code-sense",
   "version": "0.1.0",
   "publisher": "negative-space",
-  "icon": "Code Sense Logo.png",
+  "icon": "images/Code-Sense-Logo.png",
   "engines": {
     "vscode": "^1.73.0"
   },
