@@ -7,8 +7,7 @@
 
 ### 1. Download latest `code-sense-X.X.X.vsix` file and install using the "Installe from VSIX..." option in the extensions menu
 
-![](./images/vsix-install-steps.jpg)
-
+![](https://code-sense.s3.amazonaws.com/vsix-install-steps.jpg)
 
 ### 2. Enable proposed APIs for this extension
 
@@ -22,10 +21,10 @@
 }
 ```
 
-### 4. Restart VSCode
+### 3. Restart VSCode
 
 
 # Start 
 
-## Use command pallet to run `code-sense.start`
+## Use the command pallette to run `code-sense.start`
 
