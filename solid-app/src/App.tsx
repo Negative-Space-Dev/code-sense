@@ -46,13 +46,13 @@ window.addEventListener('message', event => {
     // Square bracket notation is used to access the correct results properties from state
     if ('limitHit' in message.result) return setState({ [`${message.for}ResultsLoading`]: false });
     setState(state => ({ 
-      [`${message.for}Results`]: [...state[`${message.for as 'search' | 'into' | 'outof'}Results`], message.result].sort((a, b) => {
+      [`${message.for}Results`]: [...state[`${message.for as 'into' | 'outof'}Results`], message.result].sort((a, b) => {
         if (a.ranges[0][0].line < b.ranges[0][0].line) return -1;
         if (a.ranges[0][0].line > b.ranges[0][0].line) return 1;
         return 0;
       })
     }));
-    // console.log(state[`${message.for as 'search' | 'into' | 'outof'}Results`]);
+    // console.log(state[`${message.for as 'into' | 'outof'}Results`]);
   }
   else if (message.workspace) {
     setState(state => ({ workspace: message.workspace }));
