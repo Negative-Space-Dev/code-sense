@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const stringSimilarity = require("string-similarity");
 const app = express();
 const port = 3000;
 app.use(cors());
@@ -15,43 +16,24 @@ app.use(express.static(path.join(__dirname, '../solid-app/dist/')));
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 function activate(context) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "code-sense" is now active!');
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('code-sense.find-file-references', async () => {
-        console.log('Open Flow');
-        // Find where the current file is being imported
-        // Get current filename
-        const activeTextEditor = vscode.window.activeTextEditor;
-        // console.log(activeTextEditor);
-        if (activeTextEditor) {
-            const document = activeTextEditor.document;
-            const fileNameArrayReversed = document.fileName.split('/').reverse();
-            const [fileName, folderName, ...rest] = fileNameArrayReversed;
-            const [fileNameRoot, fileNameExtension] = fileName.split('.');
-            // console.log({fileName, folderName, fileNameRoot, fileNameExtension});
-            // Perform search across workspace
-            const fileNameRegex = `('|"|/)${fileNameRoot}(|.${fileNameExtension})('|")`;
-            vscode.commands.executeCommand('workbench.action.findInFiles', { query: fileNameRegex, isRegex: true });
-        }
-    });
-    let disposable2 = vscode.commands.registerCommand('code-sense.start', async () => {
+    // Track currently webview panel
+    let currentPanel = undefined;
+    const disposable = vscode.commands.registerCommand('code-sense.start', async () => {
         // const fullWebServerUri = await vscode.env.asExternalUri(
         // 	vscode.Uri.parse(`http://localhost:5173`)
         // );
         // console.log(fullWebServerUri);
+        if (currentPanel)
+            return currentPanel.reveal();
+        let activeEditor = vscode.window.activeTextEditor;
         // Create and show a new webview
-        const panel = vscode.window.createWebviewPanel('code-sense', // Identifies the type of the webview. Used internally
+        currentPanel = vscode.window.createWebviewPanel('code-sense', // Identifies the type of the webview. Used internally
         'Code Sense', // Title of the panel displayed to the user
         vscode.ViewColumn.One, // Editor column to show the new webview panel in.
         {
             enableScripts: true,
+            retainContextWhenHidden: true,
             localResourceRoots: [
                 vscode.Uri.file(context.extensionPath),
             ]
@@ -89,84 +71,100 @@ function activate(context) {
 			</style>
 			<script> setTimeout(() => document.getElementById('reloaded-badge').remove(), 2500)</script>`;
             file = file.replace('<body>', `<body>\n${reloadedBadge}`);
-            panel.webview.html = file;
+            if (currentPanel)
+                currentPanel.webview.html = file;
             console.log('Entry loaded');
         };
         loadEntry();
-        fs.watchFile(entryPath, (curr, prev) => loadEntry());
-        panel.webview.onDidReceiveMessage(message => {
+        fs.watchFile(entryPath, loadEntry);
+        currentPanel.webview.onDidReceiveMessage(async (message) => {
             console.log('RECEIVED MESSAGE', message);
             switch (message.command) {
                 case 'find':
-                    vscode.workspace.findTextInFiles({ pattern: message.text }, (result) => {
+                    vscode.workspace.findTextInFiles(message.textSearchQuery, message.textSearchOptions, async (result) => {
+                        if (message.for === 'outof' && 'preview' in result) {
+                            const matches = Array.from(result.preview.text.matchAll(message.textSearchQuery.pattern));
+                            // console.log('matches', matches);
+                            result.outOfUris = [];
+                            const promises = matches.map(async (match, index) => {
+                                // console.log('match', match.groups);
+                                const filename = match.groups?.filename;
+                                const extension = match.groups?.extension || (message.fileDefinition?.extension ? '.' + message.fileDefinition.extension : '');
+                                if (filename) {
+                                    const path = `${message.fileDefinition.folder}/${filename}${extension}`;
+                                    // console.log('path', path);
+                                    const uris = await vscode.workspace.findFiles(`**/${path}*`, '', 3);
+                                    // console.log("New URIs", uris);
+                                    let uri;
+                                    if (uris.length === 0 || activeEditor === undefined)
+                                        uri = vscode.Uri.file(path);
+                                    else if (uris.length === 1)
+                                        uri = uris[0];
+                                    else {
+                                        const activePath = activeEditor.document.uri.path;
+                                        uri = uris.reduce((prev, curr) => {
+                                            // console.log('prev', prev, 'curr', curr);
+                                            const prevScore = stringSimilarity.compareTwoStrings(activePath, prev.path);
+                                            const currScore = stringSimilarity.compareTwoStrings(activePath, curr.path);
+                                            // console.log('prevScore', prevScore, 'currScore', currScore);
+                                            return prevScore > currScore ? prev : curr;
+                                        });
+                                    }
+                                    // console.log("URI", uri);
+                                    result.outOfUris[index] = uri;
+                                }
+                            });
+                            await Promise.allSettled(promises);
+                        }
                         console.log('result', result);
-                        panel.webview.postMessage({ result });
-                    }, undefined).then(() => { });
+                        currentPanel?.webview.postMessage({ result, for: message.for });
+                    }, undefined).then((finalResult) => {
+                        currentPanel?.webview.postMessage({ result: finalResult, for: message.for });
+                    });
                     break;
                 case 'openFile':
-                    const uri = vscode.Uri.parse(message.path);
-                    console.log('uri', uri);
-                    vscode.workspace.openTextDocument(uri).then(doc => vscode.window.showTextDocument(doc));
+                    const document = await vscode.workspace.openTextDocument(message.path);
+                    vscode.window.showTextDocument(document, 1).then(editor => {
+                        if (message.range) {
+                            const range = new vscode.Range(message.range[0].line, message.range[0].character, message.range[1].line, message.range[1].character);
+                            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+                            const decorationType = vscode.window.createTextEditorDecorationType({ border: '2px solid var(--vscode-editor-findMatchBorder)' });
+                            editor.setDecorations(decorationType, [range]);
+                            const disposable = vscode.window.onDidChangeTextEditorSelection(() => {
+                                decorationType.dispose();
+                                disposable.dispose();
+                            });
+                        }
+                    });
+                    // const uri = vscode.Uri.parse(message.path);
+                    // console.log('uri', uri);
+                    // try {
+                    // } catch (e)
+                    // console.log(message.path);
+                    // vscode.commands.executeCommand('workbench.action.quickOpen', message.path);
+                    break;
+                case 'getWorkspace':
+                    currentPanel?.webview.postMessage({ workspace: vscode.workspace.workspaceFolders });
+                    break;
+                case 'getActiveEditor':
+                    currentPanel?.webview.postMessage({ activeEditor: vscode.window.activeTextEditor });
                     break;
             }
         });
-        // const matches = file.matchAll(/(src|href)="(.*)"/g);
-        // for (const match of matches) {
-        // 	console.log(match);
-        // 	const value = match[2];
-        // 	const newValue = panel.webview.asWebviewUri(
-        // 		vscode.Uri.joinPath(context.extensionUri, 'dist', value)
-        // 	);
-        // 	file = file.replace(value, newValue.toString());
-        // }
-        // const scriptUri = panel.webview.asWebviewUri(
-        // 	vscode.Uri.joinPath(context.extensionUri, 'src', 'main.tsx')
-        // );
-        // const svgUri = panel.webview.asWebviewUri(
-        // 	vscode.Uri.joinPath(context.extensionUri, 'public', 'vite.svg')
-        // );
-        // console.log(scriptUri);
-        // console.log(svgUri);
-        // const stylesUri = panel.webview.asWebviewUri(
-        // 	vscode.Uri.joinPath(context.extensionUri, 'dist/assets', 'index.3fce1f81.css')
-        // );
-        // const cspSource = panel.webview.cspSource;
-        // fetch('http://localhost:5173').then((response: any) => {
-        // 	console.log('response', response);
-        // 	return response.text();
-        // }).then((body: any) => { 
-        // 	console.log('body', body); 
-        // 	// And set its HTML content
-        // 	panel.webview.html = getWebviewContent(body);
-        // });
-        // panel.webview.html = `<!DOCTYPE html>
-        // 		<head>
-        // 				<meta
-        // 						http-equiv="Content-Security-Policy"
-        // 						content="default-src 'none'; frame-src ${fullWebServerUri} ${cspSource} https:; img-src ${cspSource} https:; script-src ${cspSource}; style-src ${cspSource} 'unsafe-inline';"
-        // 				/>
-        // 		</head>
-        // 		<body>
-        // 		<style>
-        // 			html, body, iframe {
-        // 				display: block;
-        // 				width: 100%;
-        // 				height: 100%;
-        // 			}
-        // 			body { padding: 0; }
-        // 		</style>
-        // 		<!-- All content from the web server must be in an iframe -->
-        // 		<iframe src="${fullWebServerUri}" frameborder="0" allowfullscreen></iframe>
-        // </body>
-        // </html>`;
+        // Listens for active editor changes
+        const disposable2 = vscode.window.onDidChangeActiveTextEditor((editor) => {
+            activeEditor = editor;
+            currentPanel?.webview.postMessage({ activeEditor: editor });
+        });
+        currentPanel.onDidDispose(() => {
+            currentPanel = undefined;
+            fs.unwatchFile(entryPath, loadEntry);
+            disposable2.dispose();
+        }, null, context.subscriptions);
     });
     context.subscriptions.push(disposable);
-    context.subscriptions.push(disposable2);
 }
 exports.activate = activate;
-function getWebviewContent(body) {
-    return body;
-}
 // this method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;

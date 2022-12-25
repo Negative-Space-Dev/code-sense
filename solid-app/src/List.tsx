@@ -1,19 +1,33 @@
 import { Component, For } from 'solid-js';
-import styles from './List.module.css';
+import Result from './Result';
+import vscode from 'vscode';
+import { 
+  provideVSCodeDesignSystem, 
+  vsCodeProgressRing
+} from "@vscode/webview-ui-toolkit";
+import { countResults } from './utils';
+import { CustomTextSearchMatch } from './types';
 
-const List: Component<{results: Result[]}> = (props) => {
-  const openFile = (path: string) => {
-    window.vscode.postMessage({ command: 'openFile', path });
-  };
+provideVSCodeDesignSystem().register(
+  vsCodeProgressRing(),
+);
+
+const List: Component<{results: CustomTextSearchMatch[], resultsLoading: boolean, workspace: vscode.WorkspaceFolder[] | null}> = (props) => {
+  
 
   return (
-    <For each={props.results}>
-      {(result) => 
-        <div class={styles['result']} onClick={() => openFile(result.uri.path)}>
-          {result.preview.text}
-        </div>
-      }
-    </For>
+    <div>
+      <p style="display: flex; gap: 5px;">
+        <span>Results: {countResults(props.results)}</span> 
+        {props.resultsLoading ? 
+          <>loading <vscode-progress-ring style="width: 15px; height: 15px; display: inline-flex;"></vscode-progress-ring></> : 
+          'DONE' }
+      </p>
+
+      <For each={props.results}>
+        {(result) => <Result result={result} workspace={props.workspace}/>}
+      </For>
+    </div>
   );
 };
 
