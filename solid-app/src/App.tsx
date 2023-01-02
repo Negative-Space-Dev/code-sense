@@ -1,4 +1,4 @@
-import { Component, createEffect, Show } from 'solid-js';
+import { Component, createEffect, Show, JSX } from 'solid-js';
 import { createStore } from "solid-js/store";
 import vscode from 'vscode';
 import { 
@@ -28,15 +28,15 @@ provideVSCodeDesignSystem().register(
 
 const [state, setState] = createStore({
   intoResults: [] as CustomTextSearchMatch[],
-  intoResultsLoading: false,
+  intoResultsLoading: 0,
   outofResults: [] as CustomTextSearchMatch[],
-  outofResultsLoading: false,
+  outofResultsLoading: 0,
   workspace: null as vscode.WorkspaceFolder[] | null,
   activeEditor: null as vscode.TextEditor | null,
 });
 
-const clearIntoResults = () => setState({ intoResults: [], intoResultsLoading: false });
-const clearOutofResults = () => setState({ outofResults: [], outofResultsLoading: false });
+const clearIntoResults = () => setState({ intoResults: [], intoResultsLoading: 0 });
+const clearOutofResults = () => setState({ outofResults: [], outofResultsLoading: 0 });
 
 window.addEventListener('message', event => {
   const message = event.data; // The JSON data our extension sent
@@ -44,7 +44,9 @@ window.addEventListener('message', event => {
   if (message.result) {
     console.log('result', message.for, message.result);
     // Square bracket notation is used to access the correct results properties from state
-    if ('limitHit' in message.result) return setState({ [`${message.for}ResultsLoading`]: false });
+    if ('limitHit' in message.result) 
+      return setState(state => 
+        ({ [`${message.for}ResultsLoading`]: state[`${message.for as 'into' | 'outof'}ResultsLoading`] - 1 }));
     setState(state => ({ 
       [`${message.for}Results`]: [...state[`${message.for as 'into' | 'outof'}Results`], message.result].sort((a, b) => {
         if (a.ranges[0][0].line < b.ranges[0][0].line) return -1;
@@ -113,6 +115,8 @@ createEffect(() => {
 
   for (const importPattern of matchedIntoImportPatterns()) {
     for (const condition of importPattern.conditions) {
+      setState(state => 
+        ({ [`intoResultsLoading`]: state[`intoResultsLoading`] + 1 }));
       window.vscode.postMessage({ 
         command: 'find', 
         for: 'into',
@@ -134,6 +138,8 @@ createEffect(() => {
   for (const importPattern of importPatterns) {
     for (const condition of importPattern.conditions) {
       if (!minimatch(currentFilePath.slice(1), condition.include)) continue;
+      setState(state => 
+        ({ [`outofResultsLoading`]: state[`outofResultsLoading`] + 1 }));
       window.vscode.postMessage({ 
         command: 'find', 
         for: 'outof',
@@ -150,10 +156,27 @@ createEffect(() => {
   }
 });
 
+let panel: JSX.IntrinsicElements["vscode-panels"] | undefined;
+
+createEffect(() => {
+  // console.log("HIT");
+  if (state.intoResultsLoading || state.outofResultsLoading) return;
+  // console.log('panel', panel);
+  if (!panel) return;
+  // console.log('panel.activeTabIndex', panel.activeTabIndex);
+  if (panel.activeTabIndex === 0 && state.intoResults.length === 0 && state.outofResults.length > 0)
+    panel.querySelector('vscode-panel-tab#tab-2').click();
+  else if (panel.activeTabIndex === 1 && state.outofResults.length === 0 && state.intoResults.length > 0)
+    panel.querySelector('vscode-panel-tab#tab-1').click();
+});
+
+
 const App: Component = () => {
   return (
     <div class={styles.App}>
-      <vscode-panels>
+      {/* <div>intoResultsLoading {state.intoResultsLoading}</div>
+      <div>outofResultsLoading {state.outofResultsLoading}</div> */}
+      <vscode-panels ref={panel}>
         <vscode-panel-tab id="tab-1">INTO {`(${countResults(state.intoResults)})`}</vscode-panel-tab>
         <vscode-panel-tab id="tab-2">
           OUT OF {`(${countResults(state.outofResults)})`}

@@ -12,7 +12,7 @@ provideVSCodeDesignSystem().register(
   vsCodeProgressRing(),
 );
 
-const List: Component<{results: CustomTextSearchMatch[], resultsLoading: boolean, workspace: vscode.WorkspaceFolder[] | null}> = (props) => {
+const List: Component<{results: CustomTextSearchMatch[], resultsLoading: number, workspace: vscode.WorkspaceFolder[] | null}> = (props) => {
   
 
   return (

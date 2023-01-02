@@ -9,13 +9,15 @@ import * as stringSimilarity from 'string-similarity';
 import { CustomTextSearchMatch } from './types';
 
 const app = express();
-const port = 3000;
+const port = 49168;
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, '../solid-app/dist/')));
 
 app.listen(port, () => {
 	console.log(`Example app listening on port ${port}`);
+}).on('error', (err) => {
+	vscode.window.showErrorMessage(`Code Sense: ${err.message}`);
 });
 
 
@@ -34,12 +36,24 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (currentPanel) return currentPanel.reveal();
 		let activeEditor = vscode.window.activeTextEditor;
+		let firstSet = true;
+
+		const setActiveEditor = (editor: vscode.TextEditor | undefined) => {
+			if (editor && (editor.document.fileName !== activeEditor?.document.fileName || firstSet)) {
+				firstSet = false;
+				activeEditor = editor;
+				currentPanel?.webview.postMessage({activeEditor: editor});
+			}
+		};
 
 		// Create and show a new webview
 		currentPanel = vscode.window.createWebviewPanel(
 			'code-sense', // Identifies the type of the webview. Used internally
 			'Code Sense', // Title of the panel displayed to the user
-			vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+			{
+				viewColumn: activeEditor?.viewColumn ? activeEditor?.viewColumn + 1 : vscode.ViewColumn.Two, // Editor column to show the new webview panel in.
+				preserveFocus: true
+			},
 			{ 
 				enableScripts: true,
 				retainContextWhenHidden: true,
@@ -184,16 +198,13 @@ export function activate(context: vscode.ExtensionContext) {
 					currentPanel?.webview.postMessage({workspace: vscode.workspace.workspaceFolders});
 					break;
 				case 'getActiveEditor':
-					currentPanel?.webview.postMessage({activeEditor: vscode.window.activeTextEditor});
+					setActiveEditor(vscode.window.activeTextEditor);
 					break;
 			}
 		});
 
 		// Listens for active editor changes
-		const disposable2 = vscode.window.onDidChangeActiveTextEditor((editor) => {
-			activeEditor = editor;
-			currentPanel?.webview.postMessage({activeEditor: editor});
-		});
+		const disposable2 = vscode.window.onDidChangeActiveTextEditor(editor => setActiveEditor(editor));
 
 		currentPanel.onDidDispose(
 			() => {

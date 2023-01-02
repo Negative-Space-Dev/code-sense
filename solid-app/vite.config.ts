@@ -3,9 +3,9 @@ import solidPlugin from 'vite-plugin-solid';
 
 export default defineConfig({
   plugins: [solidPlugin()],
-  base: 'http://localhost:3000/',
+  base: 'http://localhost:49168/',
   server: {
-    port: 3000,
+    port: 49168,
   },
   build: {
     watch: {},
