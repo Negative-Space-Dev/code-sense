@@ -26,5 +26,5 @@
 
 # Start 
 
-## Use the command pallette to run `code-sense.start`
+## Use the command pallette to run `Code Sense: Start code sense`
 
