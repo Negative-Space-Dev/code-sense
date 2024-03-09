@@ -3,7 +3,7 @@
   "displayName": "Code Sense",
   "description": "Discover and navigate code faster",
   "repository": "https://github.com/Negative-Space-Dev/code-sense",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "publisher": "negative-space",
   "icon": "images/Code-Sense-Logo.png",
   "engines": {

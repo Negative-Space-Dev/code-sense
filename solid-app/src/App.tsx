@@ -1,9 +1,9 @@
-import { Component, createEffect, Show, JSX } from 'solid-js';
+import { Component, createEffect, Show, on, type JSX } from 'solid-js';
 import { createStore } from "solid-js/store";
 import vscode from 'vscode';
-import { 
-  provideVSCodeDesignSystem, 
-  vsCodeButton, 
+import {
+  provideVSCodeDesignSystem,
+  vsCodeButton,
   vsCodeTextField,
   vsCodePanels,
   vsCodePanelTab,
@@ -41,19 +41,20 @@ window.addEventListener('message', event => {
   const message = event.data; // The JSON data our extension sent
 
   if (message.result) {
-    console.log('result', message.for, message.result);
+    // console.log('result', message.for, message.result, message.activeEditor);
     // Square bracket notation is used to access the correct results properties from state
-    if ('limitHit' in message.result) 
-      return setState(state => 
-        ({ [`${message.for}ResultsLoading`]: state[`${message.for as 'into' | 'outof'}ResultsLoading`] - 1 }));
-    setState(state => ({ 
-      [`${message.for}Results`]: [...state[`${message.for as 'into' | 'outof'}Results`], message.result].sort((a, b) => {
-        if (a.ranges[0][0].line < b.ranges[0][0].line) return -1;
-        if (a.ranges[0][0].line > b.ranges[0][0].line) return 1;
-        return 0;
-      })
-    }));
-    // console.log(state[`${message.for as 'into' | 'outof'}Results`]);
+    if ('done' in message) return setState(state =>
+      ({ [`${message.for}ResultsLoading`]: state[`${message.for as 'into' | 'outof'}ResultsLoading`] - 1 }));
+
+
+    if (state.activeEditor?.document.fileName.includes(message.activeEditor))
+      setState(state => ({
+        [`${message.for}Results`]: [...state[`${message.for as 'into' | 'outof'}Results`], message.result].sort((a, b) => {
+          if (a.ranges[0][0].line < b.ranges[0][0].line) return -1;
+          if (a.ranges[0][0].line > b.ranges[0][0].line) return 1;
+          return 0;
+        })
+      }));
   }
   else if (message.workspace) {
     setState(state => ({ workspace: message.workspace }));
@@ -65,8 +66,8 @@ window.addEventListener('message', event => {
   }
 });
 
-window.vscode.postMessage({ command: 'getWorkspace'});
-window.vscode.postMessage({ command: 'getActiveEditor'});
+window.vscode.postMessage({ command: 'getWorkspace' });
+window.vscode.postMessage({ command: 'getActiveEditor' });
 
 // Used to get Vite to generate asset file
 const jsonUrl = new URL('./assets/vs-seti-icon-theme.json', import.meta.url);
@@ -101,7 +102,7 @@ const matchedOutofImportPatterns = () => {
 };
 
 // Send find commands for current active file import patterns
-createEffect(() => {
+createEffect(on(() => state.activeEditor, () => {
   clearIntoResults();
   clearOutofResults();
 
@@ -114,17 +115,17 @@ createEffect(() => {
 
   for (const importPattern of matchedIntoImportPatterns()) {
     for (const condition of importPattern.conditions) {
-      setState(state => 
-        ({ [`intoResultsLoading`]: state[`intoResultsLoading`] + 1 }));
-      window.vscode.postMessage({ 
-        command: 'find', 
+      setState(state => ({ intoResultsLoading: state.intoResultsLoading + 1 }));
+      window.vscode.postMessage({
+        command: 'find',
         for: 'into',
-        textSearchQuery: { 
-          pattern: condition.regex('customFilenameFunc' in condition  ? 
-            condition.customFilenameFunc(currentFilePath, fullFilename, filename) : 
+        activeEditor: currentFilePath,
+        textSearchQuery: {
+          pattern: condition.regex('customFilenameFunc' in condition ?
+            condition.customFilenameFunc(currentFilePath, fullFilename, filename) :
             filename
-          ), 
-          isRegExp: true 
+          ),
+          isRegExp: true
         },
         textSearchOptions: {
           ...('include' in condition && { include: condition.include }),
@@ -137,15 +138,15 @@ createEffect(() => {
   for (const importPattern of importPatterns) {
     for (const condition of importPattern.conditions) {
       if (!minimatch(currentFilePath.slice(1), condition.include)) continue;
-      setState(state => 
-        ({ [`outofResultsLoading`]: state[`outofResultsLoading`] + 1 }));
-      window.vscode.postMessage({ 
-        command: 'find', 
+      setState(state => ({ outofResultsLoading: state.outofResultsLoading + 1 }));
+      window.vscode.postMessage({
+        command: 'find',
         for: 'outof',
+        activeEditor: currentFilePath,
         fileDefinition: importPattern.fileDefinition,
-        textSearchQuery: { 
-          pattern: condition.regex('(?<filename>[A-Za-z0-9-_,\\s]+)'), 
-          isRegExp: true 
+        textSearchQuery: {
+          pattern: condition.regex('(?<filename>[A-Za-z0-9-_,\\s]+)'),
+          isRegExp: true
         },
         textSearchOptions: {
           include: currentFilePath.slice(1),
@@ -153,7 +154,7 @@ createEffect(() => {
       });
     }
   }
-});
+}));
 
 let panel: JSX.IntrinsicElements["vscode-panels"] | undefined;
 
@@ -176,13 +177,13 @@ const App: Component = () => {
       {/* <div>intoResultsLoading {state.intoResultsLoading}</div>
       <div>outofResultsLoading {state.outofResultsLoading}</div> */}
       <vscode-panels ref={panel}>
-        <vscode-panel-tab id="tab-1">INTO {`(${countResults(state.intoResults)})`}</vscode-panel-tab>
+        <vscode-panel-tab id="tab-1">ACTIVE FILE USED IN {`(${countResults(state.intoResults)})`}</vscode-panel-tab>
         <vscode-panel-tab id="tab-2">
-          OUT OF {`(${countResults(state.outofResults)})`}
+          ACTIVE FILE USES {`(${countResults(state.outofResults)})`}
         </vscode-panel-tab>
 
         <vscode-panel-view id="view-1">
-          <div style={{display: 'flex', 'flex-direction': 'column', gap: '10px'}}>
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '10px' }}>
             <div>{getCurrentFilePath()}</div>
 
             <Show when={matchedIntoImportPatterns().length === 0}>
@@ -191,12 +192,12 @@ const App: Component = () => {
               </div>
             </Show>
 
-            <List results={state.intoResults} resultsLoading={state.intoResultsLoading} workspace={state.workspace}/>
+            <List results={state.intoResults} resultsLoading={state.intoResultsLoading} workspace={state.workspace} />
           </div>
         </vscode-panel-view>
 
         <vscode-panel-view id="view-2">
-          <div style={{display: 'flex', 'flex-direction': 'column', gap: '10px'}}>
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '10px' }}>
             <div>{getCurrentFilePath()}</div>
 
             <Show when={matchedOutofImportPatterns().length === 0}>
@@ -205,7 +206,7 @@ const App: Component = () => {
               </div>
             </Show>
 
-            <List results={state.outofResults} resultsLoading={state.outofResultsLoading} workspace={state.workspace}/>
+            <List results={state.outofResults} resultsLoading={state.outofResultsLoading} workspace={state.workspace} />
           </div>
         </vscode-panel-view>
 
