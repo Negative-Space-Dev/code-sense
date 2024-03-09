@@ -7,7 +7,8 @@
 
 ### 1. Download latest `code-sense-X.X.X.vsix` file and install using the "Installe from VSIX..." option in the extensions menu
 
-![](https://code-sense.s3.amazonaws.com/vsix-install-steps.jpg)
+![image](https://github.com/Negative-Space-Dev/code-sense/assets/25469167/96d26b9c-6c3f-47ac-ae24-8cf43f25172b)
+
 
 ### 2. Enable proposed APIs for this extension
 
