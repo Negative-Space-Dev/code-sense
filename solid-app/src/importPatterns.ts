@@ -7,10 +7,10 @@ export default [
     },
     conditions: [
       {
-        regex: (filename: string) => `\\{%-?\\s*(render|include)\\s*('|")${filename}('|")[\\s\\S\n]*?-?%\\}`,
+        regex: (filename: string) => `(render|include)\\s*('|")${filename}('|")`,
         include: '**/**.liquid',
-      }
-    ]
+      },
+    ],
   },
   {
     name: 'section import',
@@ -20,12 +20,25 @@ export default [
     },
     conditions: [
       {
-        regex: (filename: string) => `\\{%-?\\s*section\\s*('|")${filename}('|")[\\s\\S\n]*?-?%\\}`,
+        regex: (filename: string) => `section\\s*('|")${filename}('|")`,
         include: '**/**.liquid',
       },
       {
         regex: (filename: string) => `"type": "${filename}"`,
-        include: '**/templates/**.json'
+        include: '**/templates/**.json',
+      },
+    ],
+  },
+  {
+    name: 'section group import',
+    fileDefinition: {
+      folder: 'sections',
+      extension: 'json',
+    },
+    conditions: [
+      {
+        regex: (filename: string) => `sections\\s*('|")${filename}('|")`,
+        include: '**/**.liquid',
       }
     ],
   },
@@ -36,10 +49,12 @@ export default [
     },
     conditions: [
       {
-        regex: (filename: string) => `('|")${filename}(?<extension>\\..*|)('|")\\s*\\|\\s*asset_url`,
-        customFilenameFunc: (path: string, fullFilename: string, filename: string) => fullFilename.replace('.liquid', ''),
+        regex: (filename: string) =>
+          `('|")${filename}(?<extension>\\..*|)('|")\\s*\\|\\s*asset_url`,
+        customFilenameFunc: (path: string, fullFilename: string, filename: string) =>
+          fullFilename.replace('.liquid', ''),
         include: '**/**.liquid',
-      }
-    ]
-  }
+      },
+    ],
+  },
 ];

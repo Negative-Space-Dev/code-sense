@@ -2,6 +2,7 @@
   "name": "vite-template-solid",
   "version": "0.0.0",
   "description": "",
+  "type": "module",
   "scripts": {
     "start": "vite",
     "dev": "vite",
@@ -11,13 +12,13 @@
   "license": "MIT",
   "devDependencies": {
     "@types/vscode-webview": "^1.57.0",
-    "typescript": "^4.8.2",
-    "vite": "^3.0.9",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.3",
     "vite-plugin-solid": "^2.3.0"
   },
   "dependencies": {
-    "@vscode/webview-ui-toolkit": "^1.1.0",
-    "minimatch": "^5.1.0",
-    "solid-js": "^1.5.1"
+    "@vscode/webview-ui-toolkit": "^1.4.0",
+    "minimatch": "^9.0.3",
+    "solid-js": "^1.8.15"
   }
 }

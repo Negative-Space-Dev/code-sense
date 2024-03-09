@@ -111,6 +111,22 @@ export function activate(context: vscode.ExtensionContext) {
 
 		fs.watchFile(entryPath, loadEntry);
 
+		// async function checkIfFileExists(uri: vscode.Uri) {
+    //   try {
+    //     // Attempt to get the file stats
+    //     await vscode.workspace.fs.stat(uri);
+    //     // If the stat method succeeds, the file exists
+    //     console.log('The file exists.');
+    //     return true;
+    //   } catch (error) {
+    //     // If the stat method fails, it's likely because the file does not exist
+    //     console.log('The file does not exist.');
+    //     return false;
+    //   }
+    // }
+
+		
+
 		currentPanel.webview.onDidReceiveMessage(async message => {
 			console.log('RECEIVED MESSAGE', message);
 
@@ -133,8 +149,14 @@ export function activate(context: vscode.ExtensionContext) {
 										// console.log('path', path);
 										const uris = await vscode.workspace.findFiles(`**/${path}*`, '', 3);
 										// console.log("New URIs", uris);
-										let uri: vscode.Uri;
-										if (uris.length === 0 || activeEditor === undefined) uri = vscode.Uri.file(path);
+										let uri: vscode.Uri | null;
+										if (uris.length === 0 || activeEditor === undefined) uri = null;
+										// {
+										// 	const _uri = vscode.Uri.file(path);
+										// 	const fileExists = await checkIfFileExists(_uri);
+										// 	if (fileExists) uri = _uri;
+										// 	else uri = null;
+										// }
 										else if (uris.length === 1) uri = uris[0];
 										else {
 											const activePath = activeEditor.document.uri.path;

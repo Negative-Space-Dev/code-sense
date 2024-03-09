@@ -11,6 +11,9 @@ interface VscodeSetiIconData {
       fontColor: string;
     };
   }
+  languageIds: {
+    [key: string]: string;
+  }
 }
 
 interface FileDefinition {

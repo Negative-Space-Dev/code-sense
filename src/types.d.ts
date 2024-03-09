@@ -6,5 +6,5 @@ interface FileDefinition {
 }
 
 interface CustomTextSearchMatch extends vscode.TextSearchMatch {
-  outOfUris: vscode.Uri[];
+  outOfUris: (vscode.Uri | null)[];
 }

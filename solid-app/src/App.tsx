@@ -9,8 +9,7 @@ import {
   vsCodePanelTab,
   vsCodePanelView,
 } from "@vscode/webview-ui-toolkit";
-// const minimatch = require("minimatch");
-import minimatch from 'minimatch';
+import { minimatch } from 'minimatch';
 
 import List from "./List";
 import styles from './App.module.css';

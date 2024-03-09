@@ -60,7 +60,9 @@ const languageIcon = (filePath: string) => {
   
   try {
     const extension = filePath.split('.').reverse()[0];
-    const iconDefinition = window['vs-seti-icon-theme'].iconDefinitions[window['vs-seti-icon-theme'].fileExtensions[extension]];
+    const iconDefinition = window['vs-seti-icon-theme'].iconDefinitions[
+      window['vs-seti-icon-theme'].fileExtensions[extension] || window['vs-seti-icon-theme'].languageIds[extension]
+    ];
     // Convert icon from Hex to Decimal and use Unicode character for string
     const fontCharacterConverted = String.fromCodePoint(parseInt(iconDefinition.fontCharacter.replace('\\', ''), 16));
     const iconJsx = <span class="vscode-icon" style={{color: iconDefinition.fontColor}}>{fontCharacterConverted}</span>;
@@ -74,13 +76,15 @@ const languageIcon = (filePath: string) => {
 
 const ResultLine: Component<{result: CustomTextSearchMatch, matchIndex: number, workspace: vscode.WorkspaceFolder[] | null}> = (props) => {
   console.log('RESULT', props.result);
-  let uri: vscode.Uri;
+  let uri: vscode.Uri | null;
   if (props.result.outOfUris) uri = props.result.outOfUris[props.matchIndex];
   else uri = props.result.uri;
-  
+
+  if (!uri) return null;
+
   return (
     <div class={styles['result']}>
-      <p class={styles['file']} onClick={() => props.result.outOfUris ? openFile(uri.path) : openFile(uri.path, props.result.ranges[props.matchIndex])}>
+      <p class={styles['file']} onClick={() => uri && (props.result.outOfUris ? openFile(uri.path) : openFile(uri.path, props.result.ranges[props.matchIndex]))}>
         {languageIcon(uri.path)}{formatFile(uri.path, props.workspace)}
       </p>
       <div class={styles['preview']}>{formatPreview(props.result, props.matchIndex || 0)}</div>

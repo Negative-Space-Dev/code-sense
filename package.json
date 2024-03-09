@@ -2,7 +2,7 @@
   "name": "code-sense",
   "displayName": "Code Sense",
   "description": "Discover and navigate code faster",
-  "repository": "https://github.com/JasonHassold/code-sense",
+  "repository": "https://github.com/Negative-Space-Dev/code-sense",
   "version": "0.2.5",
   "publisher": "negative-space",
   "icon": "images/Code-Sense-Logo.png",
@@ -31,12 +31,12 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run -S esbuild-base -- --minify",
+    "vscode:prepublish": "bun run esbuild-base -- --minify",
     "esbuild-base": "rimraf out && esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "build": "npm run -S esbuild-base -- --sourcemap",
-    "watch": "npm run -S esbuild-base -- --sourcemap --watch",
+    "build": "bun run esbuild-base -- --sourcemap",
+    "watch": "bun run esbuild-base -- --sourcemap --watch",
     "test-compile": "tsc -p ./",
-    "pretest": "npm run esbuild && npm run lint",
+    "pretest": "bun run esbuild && bun run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
   },
