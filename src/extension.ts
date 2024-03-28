@@ -9,7 +9,8 @@ import * as stringSimilarity from 'string-similarity';
 import { CustomTextSearchMatch } from './types';
 
 const app = express();
-const port = 49168;
+const port = (vscode.workspace.getConfiguration('code-sense').get('serverPort') || 49168) as number;
+console.log('PORT', port);
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, '../solid-app/dist/')));
@@ -56,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(context.extensionPath)],
+        localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'solid-app/dist')],
       } // Webview options. More on these later.
     );
 
@@ -99,6 +100,8 @@ export function activate(context: vscode.ExtensionContext) {
 			<script> setTimeout(() => document.getElementById('reloaded-badge').remove(), 2500)</script>`;
 
       file = file.replace('<body>', `<body>\n${reloadedBadge}`);
+
+      file = file.replaceAll('PORT', port.toString());
 
       if (currentPanel) currentPanel.webview.html = file;
 

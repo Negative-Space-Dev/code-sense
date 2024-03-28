@@ -69,10 +69,9 @@ window.addEventListener('message', event => {
 window.vscode.postMessage({ command: 'getWorkspace' });
 window.vscode.postMessage({ command: 'getActiveEditor' });
 
-// Used to get Vite to generate asset file
-const jsonUrl = new URL('./assets/vs-seti-icon-theme.json', import.meta.url);
-
-fetch(jsonUrl.href)
+const $jsonScript = document.querySelector('script#vs-seti-icon-theme') as HTMLScriptElement | null;
+if (!$jsonScript) throw new Error('vs-seti-icon-theme script not found');
+fetch($jsonScript.src)
   .then(res => res.json())
   .then(data => {
     console.log('vscode seti date', data);

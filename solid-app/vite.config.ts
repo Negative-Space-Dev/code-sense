@@ -1,14 +1,12 @@
 import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
+import path from 'node:path';
 
 export default defineConfig({
   plugins: [solidPlugin()],
-  base: 'http://localhost:49168/',
-  server: {
-    port: 49168,
-  },
+  base: 'http://localhost:PORT/',
   build: {
     watch: {},
     target: 'esnext',
-  },
+  }
 });

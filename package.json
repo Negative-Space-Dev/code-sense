@@ -3,7 +3,7 @@
   "displayName": "Code Sense",
   "description": "Discover and navigate code faster",
   "repository": "https://github.com/Negative-Space-Dev/code-sense",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "publisher": "negative-space",
   "icon": "images/Code-Sense-Logo.png",
   "engines": {
@@ -28,7 +28,17 @@
         "title": "Start code sense",
         "category": "Code Sense"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "CodeSense",
+      "properties": {
+        "code-sense.serverPort": {
+          "type": "number",
+          "markdownDescription": "Port to use for webview server.\n\n**Important**: Reload VSCode for changes to apply.",
+          "default": 49168
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "bun run esbuild-base -- --minify",
