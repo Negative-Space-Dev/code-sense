@@ -5,7 +5,7 @@
 ## This extension uses a Proposed API and requires extra steps to install
 
 
-### 1. Download latest `code-sense-X.X.X.vsix` file and install using the "Installe from VSIX..." option in the extensions menu
+### 1. Download latest `code-sense-X.X.X.vsix` file and install using the "Install from VSIX..." option in the extensions menu
 
 ![image](https://github.com/Negative-Space-Dev/code-sense/assets/25469167/96d26b9c-6c3f-47ac-ae24-8cf43f25172b)
 
